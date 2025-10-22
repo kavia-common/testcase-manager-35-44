@@ -15,7 +15,11 @@ class Settings(BaseModel):
 
     # CORS
     CORS_ORIGINS: str = Field(default="http://localhost:3000")
+    # Backward-compat aliases (if provided, fold into CORS_ORIGINS)
+    FRONTEND_ORIGIN: str = Field(default="")
+    ALLOWED_ORIGINS: str = Field(default="")
 
+    # App
     APP_NAME: str = Field(default="Robot Framework Test Manager API")
     APP_VERSION: str = Field(default="0.1.0")
     APP_DESCRIPTION: str = Field(
@@ -24,6 +28,7 @@ class Settings(BaseModel):
             "groups, executions, run history, logs, and configurations."
         )
     )
+    APP_PORT: int = Field(default=3001)
 
     def database_dsn(self) -> str:
         """Build an asyncpg SQLAlchemy DSN from discrete POSTGRES_* vars if POSTGRES_URL is not provided."""
@@ -51,6 +56,21 @@ class Settings(BaseModel):
             return f"postgresql+asyncpg://{auth}@{host}:{port}/{db}"
         return f"postgresql+asyncpg://{host}:{port}/{db}"
 
+    def resolved_cors_origins(self) -> str:
+        """Combine legacy FRONTEND_ORIGIN/ALLOWED_ORIGINS with CORS_ORIGINS."""
+        parts = []
+        for raw in [self.CORS_ORIGINS, self.FRONTEND_ORIGIN, self.ALLOWED_ORIGINS]:
+            if raw:
+                parts.extend([p.strip() for p in raw.split(",") if p.strip()])
+        # preserve order and de-dupe
+        seen = set()
+        unique = []
+        for p in parts:
+            if p not in seen:
+                seen.add(p)
+                unique.append(p)
+        return ",".join(unique) or "http://localhost:3000"
+
 
 @lru_cache()
 def get_settings() -> Settings:
@@ -61,11 +81,14 @@ def get_settings() -> Settings:
         POSTGRES_PASSWORD=os.getenv("POSTGRES_PASSWORD", ""),
         POSTGRES_DB=os.getenv("POSTGRES_DB", ""),
         POSTGRES_PORT=os.getenv("POSTGRES_PORT", "5432"),
-        CORS_ORIGINS=os.getenv("CORS_ORIGINS", "http://localhost:3000"),
+        CORS_ORIGINS=os.getenv("CORS_ORIGINS", os.getenv("ALLOWED_ORIGINS", os.getenv("FRONTEND_ORIGIN", "http://localhost:3000"))),
+        FRONTEND_ORIGIN=os.getenv("FRONTEND_ORIGIN", ""),
+        ALLOWED_ORIGINS=os.getenv("ALLOWED_ORIGINS", ""),
         APP_NAME=os.getenv("APP_NAME", "Robot Framework Test Manager API"),
         APP_VERSION=os.getenv("APP_VERSION", "0.1.0"),
         APP_DESCRIPTION=os.getenv(
             "APP_DESCRIPTION",
             "FastAPI backend for managing Robot Framework testcases, scenarios, groups, executions, run history, logs, and configurations.",
         ),
+        APP_PORT=int(os.getenv("APP_PORT", "3001")),
     )

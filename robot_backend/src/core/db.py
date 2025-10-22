@@ -58,6 +58,7 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 # PUBLIC_INTERFACE
 async def ping_db() -> bool:
     """Check database connectivity with a simple SELECT 1."""
+    # Database migrations are applied by the robot_database container startup before backend starts.
     async with get_session_factory()() as session:
         result = await session.execute(text("SELECT 1"))
         _ = result.scalar_one()

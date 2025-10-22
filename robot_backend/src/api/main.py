@@ -28,7 +28,8 @@ app = FastAPI(
 )
 
 # CORS
-allowed_origins = [o.strip() for o in settings.CORS_ORIGINS.split(",") if o.strip()]
+origins_csv = settings.resolved_cors_origins() if hasattr(settings, "resolved_cors_origins") else settings.CORS_ORIGINS
+allowed_origins = [o.strip() for o in origins_csv.split(",") if o.strip()]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
