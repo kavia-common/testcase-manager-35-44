@@ -14,7 +14,7 @@ class Settings(BaseModel):
     POSTGRES_PORT: str = Field(default="5432")
 
     # CORS
-    CORS_ORIGINS: str = Field(default="http://localhost:3000")
+    CORS_ORIGINS: str = Field(default="http://localhost:3000,https://vscode-internal-41361-beta.beta01.cloud.kavia.ai:3000")
     # Backward-compat aliases (if provided, fold into CORS_ORIGINS)
     FRONTEND_ORIGIN: str = Field(default="")
     ALLOWED_ORIGINS: str = Field(default="")
